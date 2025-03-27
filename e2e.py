@@ -7,9 +7,9 @@ import argparse
 import json
 import threading
 
-from e2e_test.build_site import build_site
-from e2e_test.crawl import crawl
-from e2e_test.common import finalize
+from src.build_site import build_site
+from src.crawl import crawl
+from src.common import finalize
 
 content = "iq__QBn6dV7QKnpou1Ro3p4YZhhVXwL"
 index = "iq__32LqQRXfVtmeyA8Yi1fAMGbjcu7N"

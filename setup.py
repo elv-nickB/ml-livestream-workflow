@@ -7,5 +7,6 @@ setup(
     install_requires=[
         'tqdm',
         'loguru',
+        'elv-client-py @ git+https://github.com/eluv-io/elv-client-py.git#egg=elv-client-py',
     ],
 )

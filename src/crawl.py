@@ -5,7 +5,7 @@ import tempfile
 import time
 from loguru import logger
 
-from e2e_test.common import get_client, set_message, finalize, content_info
+from src.common import get_client, set_message, finalize, content_info
 
 def crawl(tok: str, config: str) -> None:
     logger.debug(f"Write token: {tok}")

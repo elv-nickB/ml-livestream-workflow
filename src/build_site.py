@@ -2,8 +2,9 @@
 import os
 import json
 from tqdm import tqdm
+from loguru import logger
 
-from e2e_test.common import *
+from src.common import *
 
 def get_link(id: str, config: str) -> dict:
     cmd = [get_client(), 'content', 'describe', id, '--config', config]
@@ -11,9 +12,7 @@ def get_link(id: str, config: str) -> dict:
         res = os.popen(' '.join(cmd)).read()
         data = json.loads(res)
     except json.JSONDecodeError as e:
-        print(f"error with {id}")
-        print(res)
-        print(cmd)
+        logger.error(f"Error decoding JSON: {res}\n{cmd}")
         raise e
     hash = data["hash"]
     return {"/": f"/qfab/{hash}/meta"}
@@ -29,5 +28,5 @@ def build_site(tok: str, message: str, config: str):
     site_data = json.dumps({"site_map": {"searchables": links}})
     merge_metadata(tok, site_data, config)
     set_message(tok, message, config)
-    print(f"finalizing {tok}")
+    logger.debug(f"finalizing {tok}")
     finalize(tok, config)

@@ -1,6 +1,9 @@
 import os
 import json
 from datetime import datetime
+import subprocess
+import time
+from loguru import logger
 
 def edit(id: str, config: str) -> str:
     cmd = [get_client(), 'content', 'edit', id, '--config', config]
@@ -42,3 +45,26 @@ def get_client() -> str:
         return os.getenv('FABRIC_CLIENT')
     else:
         return 'qfab_cli'
+    
+def get_auth(config: str, qhit: str) -> str:
+    cmd = f"qfab_cli content token create {qhit} --update --config {config}"
+    out = subprocess.run(cmd, shell=True, check=True, capture_output=True).stdout.decode("utf-8")
+    token = json.loads(out)["bearer"]
+    return token
+
+def get_write_token(qhit: str, config: str) -> str:
+    cmd = f"qfab_cli content edit {qhit} --config {config}"
+    out = subprocess.run(cmd, shell=True, check=True, capture_output=True).stdout.decode("utf-8")
+    write_token = json.loads(out)["q"]["write_token"]
+    return write_token
+
+class timeit():
+    def __init__(self, msg: str):
+        self.msg = msg
+
+    def __enter__(self):
+        self.start = time.time()
+        logger.info(f"Starting {self.msg}")
+
+    def __exit__(self, *args):
+        logger.info(f"{self.msg} took {time.time() - self.start} seconds")
