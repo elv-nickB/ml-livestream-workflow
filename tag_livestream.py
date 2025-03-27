@@ -1,5 +1,4 @@
 import requests
-from common_ml.utils.metrics import timeit
 import time
 import subprocess
 import argparse
@@ -7,20 +6,20 @@ import json
 from loguru import logger
 from elv_client_py import ElvClient
 
-from src.common import finalize, get_auth, get_write_token, timeit
+from src.common import get_auth, timeit
 from src.external_tag_subset import trim_tags
 
 from config import config
 
 def upload_external(content: str, auth: str, file: str):
-    url = f"{config["tag_host"]}/{content}/upload_tags?authorization={auth}"
+    url = f"{config['tag_host']}/{content}/upload_tags?authorization={auth}"
     with open(file, "rb") as f:
         response = requests.post(url, files={"file": f})
     if response.status_code != 200:
         raise Exception(f"Error in uploading external tags: {response.text}")
 
-def do_tagging(content: str, auth: str, config: str):
-    response = requests.post(f"{config["tag_host"]}/{content}/tag?authorization={auth}", json=config["tag_args"])
+def do_tagging(content: str, auth: str):
+    response = requests.post(f"{config['tag_host']}/{content}/tag?authorization={auth}", json=config['tag_args'])
     if response.status_code == 200:
         logger.debug(json.dumps(response.json(), indent=2))
     else:
@@ -29,7 +28,7 @@ def do_tagging(content: str, auth: str, config: str):
     done = False
     with timeit("Awaiting tagging completion"):
         while not done:
-            status = requests.get(f"{config["tag_host"]}/{content}/status?authorization={auth}").json()
+            status = requests.get(f"{config['tag_host']}/{content}/status?authorization={auth}").json()
             for stream in status:
                 for feature in status[stream]:
                     logger.debug(f"{feature} progress: {status[stream][feature]['tagging_progress']}")
@@ -43,28 +42,40 @@ def do_tagging(content: str, auth: str, config: str):
                         raise RuntimeError(f"Error in tagging: {status[stream][feature]['error']}")
             time.sleep(10)
 
-    with timeit("Finalizing"):
-        response = requests.post(f"{config["tag_host"]}/{content}/finalize?leave_open=true&authorization={auth}&write_token={content}")
-        if response.status_code == 200:
-            logger.debug(json.dumps(response.json(), indent=2))
-        else:
-            raise RuntimeError(f"Error in finalizing: {response.text}")
+    #with timeit("Finalizing"):
+    #    response = requests.post(f"{config["tag_host"]}/{content}/finalize?leave_open=true&authorization={auth}&write_token={content}")
+    #    if response.status_code == 200:
+    #        logger.debug(json.dumps(response.json(), indent=2))
+    #    else:
+    #        raise RuntimeError(f"Error in finalizing: {response.text}")
 
 def get_livestream_duration(content: str, client: ElvClient) -> int:
-    num_parts = client.content_object_metadata(write_token=content, metadata_subtree="live_recording/recordings/live_offering/finalized_parts_info/video/n_parts")
+    periods = client.content_object_metadata(write_token=content, metadata_subtree="live_recording/recordings/live_offering")
+    if len(periods) == 0:
+        return 0
+    assert len(periods) == 1
+    num_parts = periods[0]['finalized_parts_info']['video']['n_parts']
     part_duration = 30 
     return max(0, (num_parts - 1) * part_duration)
 
 def main():
     auth = get_auth(args.config, args.livestream)
-    client = ElvClient.from_configuration_url(config["fabric_url"], auth)
+    client = ElvClient.from_configuration_url(config['fabric_url'], auth)
 
-    with timeit("Uploading external tags"):
-        end_time = get_livestream_duration(args.livestream, client)
-        trim_tags(config["external_tags"].split('.')[0] + "_master.json", config["external_tags"], end_time * 1000)
-        upload_external(args.livestream, auth, "rugbyviz.json")
-    with timeit("Tagging"):
-        do_tagging(args.livestream, auth, args.config)
+    end_time = 0
+    duration = get_livestream_duration(args.livestream, client)
+    while True:
+        if duration > end_time and duration >= config['tag_interval']:
+            end_time = duration
+            with timeit("Uploading external tags"):
+                trim_tags(config['external_tags'].split('.')[0] + "_master.json", config['external_tags'], end_time * 1000)
+                upload_external(args.livestream, auth, "rugbyviz.json")
+            with timeit("Tagging"):
+                do_tagging(args.livestream, auth)
+            time.sleep(config["tag_interval"])
+        else:
+            logger.info("Livestream has not progressed enough, waiting to tag.")
+            time.sleep(45)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

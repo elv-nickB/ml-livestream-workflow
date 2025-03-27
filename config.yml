@@ -2,6 +2,8 @@ tag_host: http://localhost:8086
 search_host: https://ai-02.contentfabric.io/search
 fabric_url: https://host-76-74-28-229.contentfabric.io/config?self&qspace=main
 
-tag_request: {"features": {"shot":{}, "asr": {"stream": "audio_1"}}}
+tag_args: {"features": {"shot":{}, "asr": {"stream": "audio_1"}}}
+
+tag_interval: 180
 
 external_tags: rugbyviz.json
