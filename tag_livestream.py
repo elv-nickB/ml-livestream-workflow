@@ -29,9 +29,11 @@ def do_tagging(content: str, auth: str):
     with timeit("Awaiting tagging completion"):
         while not done:
             status = requests.get(f"{config['tag_host']}/{content}/status?authorization={auth}").json()
+            progress = {}
             for stream in status:
                 for feature in status[stream]:
-                    logger.debug(f"{feature} progress: {status[stream][feature]['tagging_progress']}")
+                    progress[feature] = status[stream][feature]['tagging_progress'] or "0%"
+            logger.info(progress)
             done = True
             for stream in status:
                 for feature in status[stream]:
@@ -43,7 +45,7 @@ def do_tagging(content: str, auth: str):
             time.sleep(10)
 
     with timeit("Finalizing"):
-        response = requests.post(f"{config["tag_host"]}/{content}/finalize?leave_open=true&authorization={auth}&write_token={content}")
+        response = requests.post(f"{config['tag_host']}/{content}/finalize?leave_open=true&authorization={auth}&write_token={content}")
         if response.status_code == 200:
             logger.debug(json.dumps(response.json(), indent=2))
         else:
@@ -67,14 +69,13 @@ def main():
     end_time = 0
     while True:
         duration = get_livestream_duration(args.livestream, client)
-        if duration > end_time and duration >= config['tag_interval']:
+        if duration > end_time and duration >= config['min_content']:
             end_time = duration
             with timeit("Uploading external tags"):
                 trim_tags(config['external_tags'].split('.')[0] + "_master.json", config['external_tags'], end_time * 1000)
                 upload_external(args.livestream, auth, "rugbyviz.json")
             with timeit("Tagging"):
                 do_tagging(args.livestream, auth)
-            time.sleep(config["tag_interval"])
         else:
             logger.info("Livestream has not progressed enough, waiting to tag.")
             time.sleep(45)
