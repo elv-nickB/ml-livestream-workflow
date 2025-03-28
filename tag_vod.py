@@ -10,14 +10,17 @@ import threading
 from src.build_site import build_site
 from src.crawl import crawl
 from src.common import finalize
+from src.external_tag_subset import trim_tags
+
+from config import config
 
 content = "iq__QBn6dV7QKnpou1Ro3p4YZhhVXwL"
 index = "iq__32LqQRXfVtmeyA8Yi1fAMGbjcu7N"
 
 host_tag = "http://localhost:8086"
-host_search = "https://ai-02.contentfabric.io/search"
+host_search = "http://localhost:8085"
 
-tag_request = {"features": {"llava":{"model":{"fps": 0.33, "models":["elv-llamavision:1", "elv-llamavision:2", "elv-llamavision:3", "elv-llamavision:4"], "prompt":"Please concisely summarize the image taken during a rugby match. Do not output more than three sentences."}}, "ocr":{"model": {"fps":0.5}}, "shot":{}, "asr": {"stream": "audio_1"}}}
+tag_request = {"features":{"shot":{}, "asr": {"stream": "audio_1"}}}
 
 # interval to do tagging
 tag_interval = 10 * 60
@@ -120,17 +123,14 @@ def main():
         if end_time > finish_time:
             print('done')
             break
-        with timeit("creating external tag subset"):
-            subprocess.run(f"python external_tag_subset.py --input_file rugbyviz_master.json --output_file rugbyviz.json --end_time {end_time // 60}", shell=True, check=True)
+        trim_tags(config['external_tags'].split('.')[0] + "_master.json", config['external_tags'], end_time * 1000)
         with timeit("Running full pipeline"):
             upload_external(auth, "rugbyviz.json")
             do_tagging(auth, args.config, end_time)
-            update_search(index, args.config, auth)
+            #update_search(index, args.config, auth)
         if not started_search:
             threading.Thread(target=search_loop, args=(auth,), daemon=True).start()
-            threading.Thread(target=search_loop, args=(auth,), daemon=True).start()
             time.sleep(5)
-            threading.Thread(target=search_loop, args=(auth,), daemon=True).start()
             started_search = True
 
 if __name__ == "__main__":

@@ -42,18 +42,20 @@ def do_tagging(content: str, auth: str):
                         raise RuntimeError(f"Error in tagging: {status[stream][feature]['error']}")
             time.sleep(10)
 
-    #with timeit("Finalizing"):
-    #    response = requests.post(f"{config["tag_host"]}/{content}/finalize?leave_open=true&authorization={auth}&write_token={content}")
-    #    if response.status_code == 200:
-    #        logger.debug(json.dumps(response.json(), indent=2))
-    #    else:
-    #        raise RuntimeError(f"Error in finalizing: {response.text}")
+    with timeit("Finalizing"):
+        response = requests.post(f"{config["tag_host"]}/{content}/finalize?leave_open=true&authorization={auth}&write_token={content}")
+        if response.status_code == 200:
+            logger.debug(json.dumps(response.json(), indent=2))
+        else:
+            raise RuntimeError(f"Error in finalizing: {response.text}")
 
 def get_livestream_duration(content: str, client: ElvClient) -> int:
     periods = client.content_object_metadata(write_token=content, metadata_subtree="live_recording/recordings/live_offering")
     if len(periods) == 0:
         return 0
     assert len(periods) == 1
+    if 'video' not in periods[0]['finalized_parts_info']:
+        return 0
     num_parts = periods[0]['finalized_parts_info']['video']['n_parts']
     part_duration = 30 
     return max(0, (num_parts - 1) * part_duration)
@@ -63,8 +65,8 @@ def main():
     client = ElvClient.from_configuration_url(config['fabric_url'], auth)
 
     end_time = 0
-    duration = get_livestream_duration(args.livestream, client)
     while True:
+        duration = get_livestream_duration(args.livestream, client)
         if duration > end_time and duration >= config['tag_interval']:
             end_time = duration
             with timeit("Uploading external tags"):
