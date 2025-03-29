@@ -37,11 +37,11 @@ def do_tagging(content: str, auth: str):
             done = True
             for stream in status:
                 for feature in status[stream]:
+                    if status[stream][feature]['status'] == "Failed":
+                        raise RuntimeError(f"Error in tagging: {status[stream][feature]['error']}")
                     if status[stream][feature]['status'] != "Completed":
                         done = False
                         break
-                    elif status[stream][feature]['status'] == "Failed":
-                        raise RuntimeError(f"Error in tagging: {status[stream][feature]['error']}")
             time.sleep(10)
 
     with timeit("Finalizing"):
