@@ -5,6 +5,8 @@ live2vod_host: https://host-76-74-29-7.contentfabric.io
 
 tag_args: {"features": {"shot":{}, "asr": {"stream": "audio_1"}}}
 
-min_content: 300
+min_tag: 300
+
+l2v_sleep: 300
 
 external_tags: rugbyviz.json

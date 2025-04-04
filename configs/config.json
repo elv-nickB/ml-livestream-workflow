@@ -1,0 +1,25 @@
+{
+    "space_id": "ispc2RUoRe9eR2v33HARQUVSp1rYXzw1",
+    "api": {
+      "url": "https://host-154-14-192-69.contentfabric.io/"
+    },
+    "fs": "os",
+    "ethereum": {
+      "url": "https://host-154-14-192-69.contentfabric.io/eth/",
+      "private_key": ""
+    },
+    "log": {
+      "level": "warn",
+      "formatter": "console",
+      "named": {
+        "/cli": {
+          "level": "warn",
+          "formatter": "console"
+        },
+        "/cli-result": {
+          "level": "normal",
+          "formatter": ""
+        }
+      }
+    }
+  }

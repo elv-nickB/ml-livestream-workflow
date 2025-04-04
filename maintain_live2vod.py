@@ -9,7 +9,7 @@ from src.common import timeit, get_auth, get_livestream_duration, get_num_period
 
 from config import config
 
-INTERVAL = 5 * 60
+INTERVAL = config["l2v_sleep"]
 
 def make_vod(livestream: str, vod: str):
     cmd = f"./elv-live-js/elv-stream copy_as_vod {livestream}  --object {vod}  --url {config['live2vod_host']}"
