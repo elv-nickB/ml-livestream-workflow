@@ -23,7 +23,7 @@ def update_search(qid: str, cli_config: str, auth: str):
     with timeit("updating vector search index"):
         update_url = f"{config['search_host']}/q/{qid}/search_update?authorization={auth}"
         response = requests.get(update_url).json()
-        print("-----SEARCH-----\n" + json.dumps(response, indent=2) + "\n")
+        logger.debug("-----SEARCH-----\n" + json.dumps(response, indent=2) + "\n")
         status_url = f"{config['search_host']}/q/{qid}/update_status?authorization={auth}"
         done = False
         while not done:

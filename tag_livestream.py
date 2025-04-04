@@ -1,12 +1,11 @@
 import requests
 import time
-import subprocess
 import argparse
 import json
 from loguru import logger
 from elv_client_py import ElvClient
 
-from src.common import get_auth, timeit
+from src.common import get_auth, timeit, get_livestream_duration, get_num_periods, get_livestream_token
 from src.external_tag_subset import trim_tags
 
 from config import config
@@ -51,34 +50,37 @@ def do_tagging(content: str, auth: str):
         else:
             raise RuntimeError(f"Error in finalizing: {response.text}")
 
-def get_livestream_duration(content: str, client: ElvClient) -> int:
-    periods = client.content_object_metadata(write_token=content, metadata_subtree="live_recording/recordings/live_offering")
-    if len(periods) == 0:
-        return 0
-    assert len(periods) == 1
-    if 'video' not in periods[0]['finalized_parts_info']:
-        return 0
-    num_parts = periods[0]['finalized_parts_info']['video']['n_parts']
-    part_duration = 30 
-    return max(0, (num_parts - 1) * part_duration)
-
 def main():
     auth = get_auth(args.config, args.livestream)
     client = ElvClient.from_configuration_url(config['fabric_url'], auth)
 
     end_time = 0
+    last_token = None
     while True:
-        duration = get_livestream_duration(args.livestream, client)
-        if duration > end_time and duration >= config['min_content']:
+        live_token = get_livestream_token(args.livestream, client)
+        if live_token == "":
+            logger.info("Livestream hasn't begun, waiting")
+            time.sleep(60)
+            continue
+        if live_token != last_token:
+            logger.info("Found new stream token")
+            last_token = live_token
+            end_time = 0
+        if get_num_periods(live_token, client) > 1:
+            logger.info("Found multiple periods, waiting for livestream to restart with new write token to resume tagging")
+            time.sleep(300)
+            continue
+        duration = get_livestream_duration(live_token, client)
+        if duration >= end_time + config['min_content']:
             end_time = duration
             with timeit("Uploading external tags"):
                 trim_tags(config['external_tags'].split('.')[0] + "_master.json", config['external_tags'], end_time * 1000)
-                upload_external(args.livestream, auth, "rugbyviz.json")
+                upload_external(live_token, auth, "rugbyviz.json")
             with timeit("Tagging"):
-                do_tagging(args.livestream, auth)
+                do_tagging(live_token, auth)
         else:
             logger.info("Livestream has not progressed enough, waiting to tag.")
-            time.sleep(45)
+            time.sleep(max(0, end_time + config['min_content'] - duration))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

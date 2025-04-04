@@ -4,6 +4,7 @@ from datetime import datetime
 import subprocess
 import time
 from loguru import logger
+from elv_client_py import ElvClient
 
 def edit(id: str, config: str) -> str:
     cmd = [get_client(), 'content', 'edit', id, '--config', config]
@@ -57,6 +58,23 @@ def get_write_token(qhit: str, config: str) -> str:
     out = subprocess.run(cmd, shell=True, check=True, capture_output=True).stdout.decode("utf-8")
     write_token = json.loads(out)["q"]["write_token"]
     return write_token
+
+def get_livestream_duration(live_token: str, client: ElvClient) -> int:
+    periods = client.content_object_metadata(write_token=live_token, metadata_subtree="live_recording/recordings/live_offering")
+    if len(periods) == 0:
+        return 0
+    assert len(periods) == 1
+    if 'video' not in periods[0]['finalized_parts_info']:
+        return 0
+    num_parts = periods[0]['finalized_parts_info']['video']['n_parts']
+    part_duration = 30
+    return max(0, (num_parts - 1) * part_duration)
+
+def get_num_periods(live_token: str, client: ElvClient) -> int:
+    return len(client.content_object_metadata(metadata_subtree='live_recording/recordings/live_offering', resolve_links=False, write_token=live_token))
+
+def get_livestream_token(qid: str, client: ElvClient) -> str:
+    return client.content_object_metadata(object_id=qid, metadata_subtree="live_recording/status/edge_write_token")
 
 class timeit():
     def __init__(self, msg: str):

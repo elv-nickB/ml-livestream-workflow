@@ -1,9 +1,10 @@
 tag_host: http://localhost:8086
-search_host: http://localhost:8085
-fabric_url: https://host-76-74-28-229.contentfabric.io/config?self&qspace=main
+search_host: https://ai-02.contentfabric.io/search
+fabric_url: https://host-154-14-192-69.contentfabric.io/config?self&qspace=main
+live2vod_host: https://host-76-74-29-7.contentfabric.io
 
 tag_args: {"features": {"shot":{}, "asr": {"stream": "audio_1"}}}
 
-min_content: 180
+min_content: 300
 
 external_tags: rugbyviz.json
