@@ -1,6 +1,6 @@
 # ml-livestream-workflow
 
-Scripts for NAB to do progressive tagging and live2vod
+Scripts for NAB to do progressive tagging with live2vod and continual indexing
 
 ## Setup
 ```

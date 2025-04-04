@@ -15,9 +15,10 @@ def upload_external(content: str, auth: str, file: str):
     with open(file, "rb") as f:
         response = requests.post(url, files={"file": f})
     if response.status_code != 200:
-        raise Exception(f"Error in uploading external tags: {response.text}")
+        logger.error(f"Error in uploading external tags: {response.text}. Continuing anyway, but something is wrong.")
 
 def do_tagging(content: str, auth: str):
+    # submit tag request
     response = requests.post(f"{config['tag_host']}/{content}/tag?authorization={auth}", json=config['tag_args'])
     if response.status_code == 200:
         logger.debug(json.dumps(response.json(), indent=2))
@@ -31,7 +32,7 @@ def do_tagging(content: str, auth: str):
             progress = {}
             for stream in status:
                 for feature in status[stream]:
-                    progress[feature] = status[stream][feature]['tagging_progress'] or "0%"
+                    progress[feature] = status[stream][feature]['tagging_progress'] or "fetching parts"
             logger.info(progress)
             done = True
             for stream in status:
@@ -48,7 +49,7 @@ def do_tagging(content: str, auth: str):
         if response.status_code == 200:
             logger.debug(json.dumps(response.json(), indent=2))
         else:
-            raise RuntimeError(f"Error in finalizing: {response.text}")
+            logger.error("There was an error finalizing, continuing to run tagger.")
 
 def main():
     auth = get_auth(args.config, args.livestream)
@@ -63,7 +64,9 @@ def main():
             time.sleep(60)
             continue
         if live_token != last_token:
-            logger.info("Found new stream token")
+            logger.info("Found new stream token.")
+            if last_token is not None:
+                logger.info("Restarting tagging on new livestream")
             last_token = live_token
             end_time = 0
         if get_num_periods(live_token, client) > 1:
@@ -73,14 +76,15 @@ def main():
         duration = get_livestream_duration(live_token, client)
         if duration >= end_time + config['min_content']:
             end_time = duration
-            with timeit("Uploading external tags"):
+            with timeit("Trimming external tags and uploading."):
                 trim_tags(config['external_tags'].split('.')[0] + "_master.json", config['external_tags'], end_time * 1000)
                 upload_external(live_token, auth, "rugbyviz.json")
             with timeit("Tagging"):
                 do_tagging(live_token, auth)
         else:
-            logger.info("Livestream has not progressed enough, waiting to tag.")
-            time.sleep(max(0, end_time + config['min_content'] - duration))
+            wait_time = max(0, end_time + config['min_content'] - duration)
+            logger.info(f"Livestream has not progressed enough, waiting {wait_time} to resume tag.")
+            time.sleep(wait_time)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -4,6 +4,7 @@ from datetime import datetime
 import subprocess
 import time
 from loguru import logger
+from requests import HTTPError
 from elv_client_py import ElvClient
 
 def edit(id: str, config: str) -> str:
@@ -60,7 +61,12 @@ def get_write_token(qhit: str, config: str) -> str:
     return write_token
 
 def get_livestream_duration(live_token: str, client: ElvClient) -> int:
-    periods = client.content_object_metadata(write_token=live_token, metadata_subtree="live_recording/recordings/live_offering")
+    try:
+        periods = client.content_object_metadata(write_token=live_token, metadata_subtree="live_recording/recordings/live_offering")
+    except HTTPError as e:
+        logger.error(e)
+        logger.error("Error retrieving duration of livestream. Returning 0 seconds.")
+        return 0
     if len(periods) == 0:
         return 0
     assert len(periods) == 1
