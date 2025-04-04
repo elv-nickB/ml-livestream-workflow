@@ -125,7 +125,7 @@ def main():
             break
         trim_tags(config['external_tags'].split('.')[0] + "_master.json", config['external_tags'], end_time * 1000)
         with timeit("Running full pipeline"):
-            upload_external(auth, "rugbyviz.json")
+            upload_external(auth, config['external_tags'])
             do_tagging(auth, args.config, end_time)
             #update_search(index, args.config, auth)
         if not started_search:

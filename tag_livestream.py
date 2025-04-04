@@ -74,16 +74,16 @@ def main():
             time.sleep(300)
             continue
         duration = get_livestream_duration(live_token, client)
-        if duration >= end_time + config['min_content']:
+        if duration >= end_time + config['min_tag']:
             end_time = duration
             with timeit("Trimming external tags and uploading."):
                 trim_tags(config['external_tags'].split('.')[0] + "_master.json", config['external_tags'], end_time * 1000)
-                upload_external(live_token, auth, "rugbyviz.json")
+                upload_external(live_token, auth, config['external_tags'])
             with timeit("Tagging"):
                 do_tagging(live_token, auth)
         else:
-            wait_time = max(0, end_time + config['min_content'] - duration)
-            logger.info(f"Livestream has not progressed enough, waiting {wait_time} to resume tag.")
+            wait_time = max(0, end_time + config['min_tag'] - duration)
+            logger.info(f"Livestream has not progressed enough, waiting {wait_time} seconds to resume tag.")
             time.sleep(wait_time)
 
 if __name__ == "__main__":
