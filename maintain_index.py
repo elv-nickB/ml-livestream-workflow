@@ -28,7 +28,11 @@ def update_search(qid: str, cli_config: str, auth: str):
         done = False
         while not done:
             status = requests.get(status_url).json()
-            done = status["status"] == "finished"
+            if "status" not in status:
+                logger.error("Got invalid status from search, waiting to retry")
+                time.sleep(5)
+                continue
+            done = status.get("status", "") == "finished"
             if done:
                 break
             print(json.dumps(status, indent=2) + "\n")

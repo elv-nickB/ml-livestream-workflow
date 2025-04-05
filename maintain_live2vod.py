@@ -9,7 +9,7 @@ from src.common import timeit, get_auth, get_livestream_duration, get_num_period
 
 from config import config
 
-INTERVAL = config["l2v_sleep"]
+INTERVAL = config["min_l2v"]
 
 def make_vod(livestream: str, vod: str):
     cmd = f"./elv-live-js/elv-stream copy_as_vod {livestream}  --object {vod}  --url {config['live2vod_host']}"
@@ -19,6 +19,8 @@ def main():
     auth = get_auth(args.config, args.livestream)
     client = ElvClient.from_configuration_url(config["fabric_url"], static_token=auth)
     last_stream_token = None
+    # waits before it begins, so that in case we reboot the script upon failure we don't end up re-running 
+    time.sleep(5)
     end_time = 0
     while True:
         stream_token = get_livestream_token(args.livestream, client)
@@ -44,7 +46,7 @@ def main():
 
         logger.info(f"Waiting {INTERVAL} seconds to resume making live2vod")
         time.sleep(INTERVAL)
-    
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, required=True)

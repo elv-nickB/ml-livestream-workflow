@@ -3,9 +3,9 @@ search_host: https://ai-02.contentfabric.io/search
 fabric_url: https://host-154-14-192-69.contentfabric.io/config?self&qspace=main
 live2vod_host: https://host-76-74-29-7.contentfabric.io
 
-tag_args: {"features": {"shot":{}, "asr": {"stream": "audio_1"}, "celeb": { "model": { "ground_truth": "epcr001", "fps":2 } }}}
+tag_args: {"features": {"shot":{}, "asr": {"stream": "audio_1"}, "celeb": { "model": { "ground_truth": "epcr001", "fps":1.5} }}}
 
 min_tag: 300
-l2v_sleep: 300
+min_l2v: 300
 
 external_tags: rugbyviz.json
