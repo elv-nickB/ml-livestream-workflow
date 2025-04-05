@@ -28,7 +28,11 @@ def do_tagging(content: str, auth: str):
     done = False
     with timeit("Awaiting tagging completion"):
         while not done:
-            status = requests.get(f"{config['tag_host']}/{content}/status?authorization={auth}").json()
+            resp = requests.get(f"{config['tag_host']}/{content}/status?authorization={auth}")
+            if resp.status_code != 200:
+                logger.error("Received invalid status code from /status, sleeping and then trying again.")
+                time.sleep(15)
+            status = resp.json()
             progress = {}
             for stream in status:
                 for feature in status[stream]:

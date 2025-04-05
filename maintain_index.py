@@ -48,7 +48,6 @@ def main():
     while True:
         current_hash = client.content_object(object_id=qid)["hash"]
         if current_hash == latest_hash:
-            logger.info("No new version detected")
             time.sleep(10)
             continue
         update_search(args.index, args.config, auth)
