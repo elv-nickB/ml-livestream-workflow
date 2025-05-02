@@ -42,7 +42,9 @@ def do_tagging(content: str, auth: str):
             for stream in status:
                 for feature in status[stream]:
                     if status[stream][feature]['status'] == "Failed":
-                        raise RuntimeError(f"Error in tagging: {status[stream][feature]['error']}")
+                        print(json.dumps(status, indent=2))
+                        logger.error(f"Tagging failed for {feature} on {stream}: {status[stream][feature]['error']}")
+                        #raise RuntimeError(f"Error in tagging: {status[stream][feature]['error']}")
                     if status[stream][feature]['status'] != "Completed":
                         done = False
                         break
@@ -57,6 +59,7 @@ def do_tagging(content: str, auth: str):
 
 def main():
     auth = get_auth(args.config, args.livestream)
+    print(f"Using auth: {auth}")
     client = ElvClient.from_configuration_url(config['fabric_url'], auth)
 
     end_time = 0
@@ -74,15 +77,19 @@ def main():
             last_token = live_token
             end_time = 0
         if get_num_periods(live_token, client) > 1:
-            logger.info("Found multiple periods, waiting for livestream to restart with new write token to resume tagging")
-            time.sleep(300)
-            continue
+            logger.warning("Found multiple periods!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        #if get_num_periods(live_token, client) > 1:
+        #    logger.info("Found multiple periods, waiting for livestream to restart with new write token to resume tagging")
+        #    time.sleep(300)
+        #    continue
         duration = get_livestream_duration(live_token, client)
+        if duration < end_time:
+            logger.warning("Duration is less than end time, probably due to a break.")
         if duration >= end_time + config['min_tag']:
             end_time = duration
-            with timeit("Trimming external tags and uploading."):
-                trim_tags(config['external_tags'].split('.')[0] + "_master.json", config['external_tags'], end_time * 1000)
-                upload_external(live_token, auth, config['external_tags'])
+            #with timeit("Trimming external tags and uploading."):
+            #    trim_tags(config['external_tags'].split('.')[0] + "_master.json", config['external_tags'], end_time * 1000)
+            #    upload_external(live_token, auth, config['external_tags'])
             with timeit("Tagging"):
                 do_tagging(live_token, auth)
         else:

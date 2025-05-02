@@ -69,10 +69,10 @@ def get_livestream_duration(live_token: str, client: ElvClient) -> int:
         return 0
     if len(periods) == 0:
         return 0
-    assert len(periods) == 1
+    #assert len(periods) == 1
     if 'video' not in periods[0]['finalized_parts_info']:
         return 0
-    num_parts = periods[0]['finalized_parts_info']['video']['n_parts']
+    num_parts = periods[-1]['finalized_parts_info']['video']['n_parts']
     part_duration = 30
     return max(0, (num_parts - 1) * part_duration)
 
